@@ -1,0 +1,46 @@
+# ── Django Core ───────────────────────────────────────────────────────────────
+Django>=5.0,<5.2
+djangorestframework>=3.15,<3.16
+djangorestframework-simplejwt>=5.3
+django-cors-headers>=4.3
+django-filter>=23.5
+django-redis>=5.4
+drf-spectacular>=0.27
+
+# ── Database ──────────────────────────────────────────────────────────────────
+psycopg[binary]>=3.1
+django-extensions>=3.2
+
+# ── Celery ────────────────────────────────────────────────────────────────────
+celery>=5.3
+django-celery-beat>=2.6
+django-celery-results>=2.5
+redis>=5.0
+
+# ── AI / ML ───────────────────────────────────────────────────────────────────
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+scikit-learn>=1.4
+cvxpy>=1.4
+yfinance>=0.2
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-decouple>=3.8
+structlog>=24.1
+gunicorn>=21.2
+whitenoise>=6.6
+Pillow>=10.0
+httpx>=0.27
+
+# ── Email ─────────────────────────────────────────────────────────────────────
+django-anymail>=10.2
+
+# ── Security ──────────────────────────────────────────────────────────────────
+django-ratelimit>=4.1
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.0
+pytest-django>=4.8          # Django integration for pytest (REQUIRED)
+pytest-cov>=5.0             # Coverage reports
+factory-boy>=3.3            # Model factories (optional but handy)
