@@ -6,9 +6,8 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  ChevronRight,
 } from "lucide-react";
-import { portfolio as portfolioApi, advisor } from "../api/client";
+import { portfolio as portfolioApi } from "../api/client";
 import {
   SectionHeader,
   Modal,

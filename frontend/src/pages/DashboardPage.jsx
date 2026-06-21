@@ -2,13 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
-  TrendingDown,
   Briefcase,
   Target,
   ArrowRight,
   AlertTriangle,
-  CheckCircle2,
-  Info,
   Zap,
 } from "lucide-react";
 import {
@@ -59,7 +56,10 @@ export default function DashboardPage() {
           market.sectors(),
           advisor.suggestedAllocation(),
         ]);
-        const pList = ps.value || [];
+        // portfolioApi.list() returns the paginated envelope
+        // {count, next, previous, results}; unwrap results to an array so the
+        // forEach/slice/map below operate on a list, not the envelope object.
+        const pList = ps.value?.results || ps.value || [];
         setPortfolios(pList);
         // Backend returns sectors as a dict keyed by sector name
         // (e.g. {"Technology": {"ticker": "XLK", "ytd_return_pct": 5.2}}),

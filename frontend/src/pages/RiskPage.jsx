@@ -1,23 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  ShieldCheck,
-  AlertTriangle,
-  BarChart3,
-  Activity,
-  Layers,
-} from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ScatterChart,
-  Scatter,
-  BarChart,
-  Bar,
-} from "recharts";
+import { ShieldCheck, Activity } from "lucide-react";
 import { portfolio as portfolioApi, risk } from "../api/client";
 import {
   SectionHeader,
@@ -94,7 +76,7 @@ export default function RiskPage() {
       });
       setMonteCarlo(mc.value);
       setCorrelation(corr.value);
-    } catch (e) {
+    } catch {
       setError(
         "Failed to load risk report. Ensure your portfolio has holdings and price history.",
       );
@@ -121,8 +103,6 @@ export default function RiskPage() {
 
   const perf = report?.performance || {};
   const rm = report?.risk_metrics || {};
-  const portName =
-    portfolios.find((p) => p.id == selectedId)?.name || "Portfolio";
 
   const mcSummary = monteCarlo?.percentiles || {};
 

@@ -9,13 +9,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { portfolio as portfolioApi } from "../api/client";
-import {
-  SectionHeader,
-  Modal,
-  EmptyState,
-  Alert,
-  Spinner,
-} from "../components/ui";
+import { Modal, EmptyState, Alert, Spinner } from "../components/ui";
 
 export default function PortfoliosPage() {
   const navigate = useNavigate();

@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Activity,
   Menu,
-  X,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { auth } from "../../api/client";

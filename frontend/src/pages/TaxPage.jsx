@@ -14,7 +14,6 @@ import {
   Select,
   TabBar,
   EmptyState,
-  MetricRow,
 } from "../components/ui";
 
 export default function TaxPage() {
@@ -50,7 +49,7 @@ export default function TaxPage() {
       setHarvestData(harv.value);
       setGainLoss(gl.value);
       setAssetLocation(al.value);
-    } catch (e) {
+    } catch {
       setError("Failed to load tax data.");
     } finally {
       setLoading(false);

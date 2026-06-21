@@ -4,7 +4,6 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle2,
-  ArrowRight,
   Lightbulb,
   Scale,
 } from "lucide-react";
@@ -16,7 +15,6 @@ import {
   Select,
   TabBar,
   EmptyState,
-  MetricRow,
   Modal,
 } from "../components/ui";
 

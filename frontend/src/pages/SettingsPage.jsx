@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  User,
-  Lock,
-  Bell,
-  ClipboardList,
-  CheckCircle2,
-  ChevronRight,
-  Save,
-} from "lucide-react";
+import { Lock, ClipboardList, CheckCircle2, Save } from "lucide-react";
 import { auth } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 import {

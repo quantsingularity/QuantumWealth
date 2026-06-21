@@ -29,7 +29,6 @@ import {
   TabBar,
   EmptyState,
   MetricRow,
-  Select,
 } from "../components/ui";
 
 const COLORS = [
@@ -99,7 +98,7 @@ export default function PortfolioDetailPage() {
             value: parseFloat(s.total_value || 0),
           })),
       );
-    } catch (e) {
+    } catch {
       setError("Failed to load portfolio.");
     } finally {
       setLoading(false);
@@ -118,7 +117,7 @@ export default function PortfolioDetailPage() {
         risk_tolerance: riskTolerance,
       });
       setOptimizeResult(res);
-    } catch (e) {
+    } catch {
       setError(
         "Optimization failed. Ensure your portfolio has at least 2 holdings with sufficient history.",
       );

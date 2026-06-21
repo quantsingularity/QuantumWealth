@@ -1,16 +1,6 @@
 import { useState, useEffect } from "react";
+import { Search, Brain } from "lucide-react";
 import {
-  Search,
-  TrendingUp,
-  TrendingDown,
-  Plus,
-  Star,
-  BarChart3,
-  Brain,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -19,25 +9,17 @@ import {
   Area,
 } from "recharts";
 import { market } from "../api/client";
-import {
-  SectionHeader,
-  Spinner,
-  Alert,
-  Modal,
-  TabBar,
-  EmptyState,
-} from "../components/ui";
+import { SectionHeader, Spinner, Alert } from "../components/ui";
 
 // AI prediction confidence comes back as a label ("low"/"medium"/"high"),
 // not a numeric fraction, so map it to a bar width.
 const CONFIDENCE_PCT = { low: 33, medium: 66, high: 100 };
 
 export default function MarketPage() {
-  const [tab, setTab] = useState("quote");
   const [ticker, setTicker] = useState("");
   const [searchQ, setSearchQ] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
+  const [, setSearching] = useState(false);
   const [quoteData, setQuoteData] = useState(null);
   const [histData, setHistData] = useState([]);
   const [prediction, setPrediction] = useState(null);
@@ -102,7 +84,7 @@ export default function MarketPage() {
           volume: b.volume,
         })),
       );
-    } catch (e) {
+    } catch {
       setError(`Could not fetch data for ${t}. Check the ticker symbol.`);
     } finally {
       setLoading(false);
