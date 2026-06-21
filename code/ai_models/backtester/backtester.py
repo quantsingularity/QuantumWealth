@@ -98,6 +98,15 @@ class BacktestEngine:
         else:
             rebalance_dates = {prices_port.index[0]}
 
+        # FIX: "never" is meant to be true buy-and-hold (no rebalancing after
+        # the initial purchase), but the drift-threshold check below ran
+        # unconditionally using its default of 0.05, so natural price
+        # movement over the backtest window kept triggering rebalances even
+        # when the caller explicitly asked for "never". Disable the drift
+        # check for this mode so "never" actually means never.
+        if rebalance_freq == "never":
+            drift_threshold = 0.0
+
         # Initialize portfolio
         shares = np.zeros(len(available))
         cash = initial_capital

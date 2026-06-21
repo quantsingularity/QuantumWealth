@@ -61,6 +61,19 @@ class PortfolioListCreateTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         self.assertEqual(resp.data["name"], "My Growth Fund")
 
+    def test_create_portfolio_response_includes_id(self):
+        # Regression test: the create response previously omitted "id"
+        # entirely (PortfolioCreateSerializer, used for input validation,
+        # was also being used to build the response). The frontend
+        # navigates to /portfolios/{id} immediately after creating one, so
+        # a missing id broke that flow.
+        resp = self.client.post(self.URL, {"name": "Needs An Id"}, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertIn("id", resp.data)
+        self.assertTrue(resp.data["id"])
+        portfolio = Portfolio.objects.get(user=self.user, name="Needs An Id")
+        self.assertEqual(str(portfolio.id), str(resp.data["id"]))
+
     def test_create_portfolio_persisted_to_database(self):
         self.client.post(self.URL, {"name": "DB Portfolio"}, format="json")
         self.assertEqual(

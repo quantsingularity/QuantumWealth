@@ -14,7 +14,6 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
-
 logger = logging.getLogger("ai_models.tax_optimizer")
 
 WASH_SALE_DAYS = 30

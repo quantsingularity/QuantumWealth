@@ -117,6 +117,13 @@ class RegimeDetector:
         prices = _fetch_close(ticker, period="3y")
         returns = prices.pct_change().dropna()
 
+        # FIX: with no (or insufficient) price history, rolling_mean and
+        # rolling_vol are empty Series, and .iloc[-1] raises IndexError on
+        # an empty Series rather than returning anything usable. Matches
+        # the same guard LSTMPredictor.predict() already has.
+        if len(returns) < 21:
+            return {"error": f"Insufficient data for {ticker} (need >=21 days)."}
+
         rolling_mean = returns.rolling(21).mean()
         rolling_vol = returns.rolling(21).std()
 

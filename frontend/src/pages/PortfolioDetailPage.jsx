@@ -91,10 +91,13 @@ export default function PortfolioDetailPage() {
       setTransactions((txData?.results || txData || []).slice(0, 50));
       const raw = histData?.snapshots || histData || [];
       setHistory(
-        raw.slice(-90).map((s) => ({
-          date: s.date?.slice(5),
-          value: parseFloat(s.total_value || 0),
-        })),
+        raw
+          .slice(0, 90)
+          .reverse()
+          .map((s) => ({
+            date: s.date?.slice(5),
+            value: parseFloat(s.total_value || 0),
+          })),
       );
     } catch (e) {
       setError("Failed to load portfolio.");
@@ -395,9 +398,9 @@ export default function PortfolioDetailPage() {
                       {((a.target_weight || 0) * 100).toFixed(1)}%
                     </span>
                     <span
-                      className={`font-medium w-16 text-right ${a.action === "BUY" ? "text-jade-500" : a.action === "SELL" ? "text-crimson-400" : "text-slate-500"}`}
+                      className={`font-medium w-16 text-right ${a.suggested_action === "BUY" ? "text-jade-500" : a.suggested_action === "SELL" ? "text-crimson-400" : "text-slate-500"}`}
                     >
-                      {a.action || "—"}
+                      {a.suggested_action || "—"}
                     </span>
                   </div>
                 ))}
@@ -527,7 +530,7 @@ export default function PortfolioDetailPage() {
                   {transactions.map((tx) => (
                     <tr key={tx.id}>
                       <td className="font-mono text-xs text-slate-400">
-                        {tx.transaction_date?.slice(0, 10)}
+                        {tx.executed_at?.slice(0, 10)}
                       </td>
                       <td>
                         <span

@@ -61,7 +61,18 @@ export default function DashboardPage() {
         ]);
         const pList = ps.value || [];
         setPortfolios(pList);
-        setSectors(sec.value || []);
+        // Backend returns sectors as a dict keyed by sector name
+        // (e.g. {"Technology": {"ticker": "XLK", "ytd_return_pct": 5.2}}),
+        // not an array. Convert to the {sector, ytd_return} array shape
+        // this page renders. ytd_return_pct is already a percentage, so
+        // divide by 100 to match the *100 multiplication below.
+        const sectorsObj = sec.value || {};
+        setSectors(
+          Object.entries(sectorsObj).map(([name, v]) => ({
+            sector: name,
+            ytd_return: (v?.ytd_return_pct ?? 0) / 100,
+          })),
+        );
         setSuggestions(alloc.value || null);
 
         // Compute total value & fetch history for first portfolio
@@ -73,7 +84,11 @@ export default function DashboardPage() {
 
         if (pList.length > 0) {
           const hist = await portfolioApi.history(pList[0].id);
-          const arr = (hist?.snapshots || hist || []).slice(-90);
+          // Snapshots come back newest-first (model ordering is -date).
+          // Take the most recent 90 (the first 90 in this order), then
+          // reverse to ascending chronological order for the chart's
+          // left-to-right X-axis.
+          const arr = (hist?.snapshots || hist || []).slice(0, 90).reverse();
           setHistoryData(
             arr.map((s) => ({
               date: s.date?.slice(5),
@@ -97,7 +112,7 @@ export default function DashboardPage() {
 
   // Allocations from suggestion
   const allocationData = suggestions
-    ? Object.entries(suggestions.allocation || suggestions || {})
+    ? Object.entries(suggestions.suggested_allocation || {})
         .filter(([, v]) => v > 0)
         .map(([k, v]) => ({
           name: k.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
@@ -124,7 +139,7 @@ export default function DashboardPage() {
             </span>
           </h1>
           <p className="text-slate-500 mt-1 text-sm">
-            Here's your financial overview for today.
+            Here&apos;s your financial overview for today.
           </p>
         </div>
         <div className="hidden sm:flex items-center gap-2">

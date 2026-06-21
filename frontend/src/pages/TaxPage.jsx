@@ -38,11 +38,6 @@ export default function TaxPage() {
     });
   }, []);
 
-  useEffect(() => {
-    if (!selectedId) return;
-    loadAll();
-  }, [selectedId]);
-
   const loadAll = async () => {
     setLoading(true);
     setError("");
@@ -62,6 +57,12 @@ export default function TaxPage() {
     }
   };
 
+  useEffect(() => {
+    if (!selectedId) return;
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   const checkWashSale = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -79,10 +80,10 @@ export default function TaxPage() {
   };
 
   const harvestOpps = harvestData?.opportunities || harvestData || [];
-  const totalST = parseFloat(gainLoss?.short_term_gain_loss || 0);
-  const totalLT = parseFloat(gainLoss?.long_term_gain_loss || 0);
+  const totalST = parseFloat(gainLoss?.short_term?.net || 0);
+  const totalLT = parseFloat(gainLoss?.long_term?.net || 0);
   const totalTaxable = parseFloat(
-    gainLoss?.total_taxable_gain_loss || totalST + totalLT || 0,
+    gainLoss?.total_net_gain ?? totalST + totalLT,
   );
 
   return (
@@ -209,7 +210,7 @@ export default function TaxPage() {
                             {h.shares || h.quantity || "—"}
                           </td>
                           <td className="font-mono text-jade-500">
-                            {h.substitute || "—"}
+                            {(h.wash_sale_substitutes || []).join(", ") || "—"}
                           </td>
                           <td className="text-xs text-slate-500 max-w-xs truncate">
                             {h.notes || h.reason || "—"}
@@ -237,7 +238,7 @@ export default function TaxPage() {
                   max={new Date().getFullYear()}
                 />
               </div>
-              {gainLoss?.transactions?.length > 0 ? (
+              {gainLoss?.realized_events?.length > 0 ? (
                 <div className="table-container">
                   <table className="table">
                     <thead>
@@ -252,8 +253,8 @@ export default function TaxPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {gainLoss.transactions.map((tx, i) => {
-                        const gl = parseFloat(tx.realized_gain_loss || 0);
+                      {gainLoss.realized_events.map((tx, i) => {
+                        const gl = parseFloat(tx.gain_loss || 0);
                         return (
                           <tr key={i}>
                             <td className="font-mono text-xs text-slate-400">
@@ -325,7 +326,7 @@ export default function TaxPage() {
                             {rec.ticker}
                           </span>
                           <span className="badge-slate">
-                            {rec.current_account || "—"}
+                            {(rec.asset_class || "").replace("_", " ") || "—"}
                           </span>
                           {rec.recommended_account && (
                             <>
@@ -337,13 +338,13 @@ export default function TaxPage() {
                           )}
                         </div>
                         <p className="text-xs text-slate-400">
-                          {rec.reason || rec.rationale || "—"}
+                          {rec.rationale || "—"}
                         </p>
-                        {rec.potential_tax_savings && (
-                          <p className="text-xs text-jade-500 mt-1 font-medium">
-                            Potential savings: $
+                        {rec.annual_tax_drag_est != null && (
+                          <p className="text-xs text-gold-400 mt-1 font-medium">
+                            Est. annual tax drag if misplaced: $
                             {parseFloat(
-                              rec.potential_tax_savings,
+                              rec.annual_tax_drag_est,
                             ).toLocaleString()}
                             /yr
                           </p>
@@ -441,29 +442,43 @@ export default function TaxPage() {
                     </h3>
                   </div>
                   <p className="text-sm text-slate-300 mb-4">
-                    {washSaleResult.explanation || washSaleResult.detail}
+                    {washSaleResult.message}
                   </p>
-                  {washSaleResult.conflicting_transactions?.length > 0 && (
+                  {washSaleResult.violations?.length > 0 && (
                     <div>
                       <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
                         Conflicting Transactions
                       </p>
-                      {washSaleResult.conflicting_transactions.map((tx, i) => (
+                      {washSaleResult.violations.map((tx, i) => (
                         <div
                           key={i}
                           className="text-xs font-mono text-slate-400 py-1"
                         >
-                          {tx.date}: {tx.type} {tx.quantity} shares @ $
-                          {tx.price}
+                          {tx.date}: BUY {tx.quantity} shares @ ${tx.price}
                         </div>
                       ))}
+                      <p className="text-sm text-jade-400 mt-3">
+                        Earliest safe sell date:{" "}
+                        <span className="font-mono font-semibold">
+                          {new Date(
+                            Math.max(
+                              ...washSaleResult.violations.map((v) =>
+                                new Date(v.date).getTime(),
+                              ),
+                            ) +
+                              31 * 24 * 60 * 60 * 1000,
+                          )
+                            .toISOString()
+                            .slice(0, 10)}
+                        </span>
+                      </p>
                     </div>
                   )}
-                  {washSaleResult.safe_sell_date && (
-                    <p className="text-sm text-jade-400 mt-3">
-                      ✓ Earliest safe sell date:{" "}
-                      <span className="font-mono font-semibold">
-                        {washSaleResult.safe_sell_date}
+                  {washSaleResult.substitutes?.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-3">
+                      Wash-sale-compliant substitutes:{" "}
+                      <span className="font-mono text-jade-500">
+                        {washSaleResult.substitutes.join(", ")}
                       </span>
                     </p>
                   )}

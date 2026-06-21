@@ -39,7 +39,7 @@ export default function AppLayout() {
   useEffect(() => {
     auth
       .unreadCount()
-      .then((d) => setUnread(d?.count || 0))
+      .then((d) => setUnread(d?.unread_count || 0))
       .catch(() => {});
     const t = setInterval(() => setTime(new Date()), 60000);
     return () => clearInterval(t);

@@ -174,6 +174,8 @@ class MarketService:
 
         predictor = LSTMPredictor()
         prediction = predictor.predict(ticker, horizon_days)
+        if "error" in prediction:
+            return prediction
         detector = RegimeDetector()
         regime = detector.detect(ticker)
         result = {**prediction, "regime": regime}

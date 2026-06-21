@@ -33,9 +33,7 @@ def refresh_all_portfolio_prices():
         change = quote.get("change", 0) or 0
         change_pct = quote.get("change_pct", 0) or 0
 
-        updated = Holding.objects.filter(
-            ticker=ticker, portfolio__is_active=True
-        ).update(
+        Holding.objects.filter(ticker=ticker, portfolio__is_active=True).update(
             current_price=price,
             day_change=change,
             day_change_pct=change_pct,

@@ -40,7 +40,13 @@ async function request(method, path, body = null, params = null) {
     body: body ? JSON.stringify(body) : null,
   });
 
-  if (res.status === 401) {
+  // FIX: a 401 only means "your access token is invalid/expired" when the
+  // request actually carried one. Without this check, a 401 from an
+  // unauthenticated call (most commonly: a wrong password on the login
+  // form itself) was being treated as session expiry, which cleared
+  // tokens and force-navigated to /login instead of letting the caller's
+  // catch block show the real error message.
+  if (res.status === 401 && token) {
     const refreshed = await tryRefresh();
     if (refreshed) return request(method, path, body, params);
     clearTokens();
@@ -51,7 +57,20 @@ async function request(method, path, body = null, params = null) {
   const data = res.status === 204 ? null : await res.json();
 
   if (!res.ok) {
-    throw new ApiError(data?.detail || "Request failed", res.status, data);
+    // FIX: the backend's custom exception handler wraps every error body
+    // as {error: true, code, detail: <original DRF error>}. Every page in
+    // this app was written assuming err.data IS that original DRF error
+    // directly (e.g. err.data.detail, err.data.non_field_errors,
+    // err.data.email). Unwrap here once so the rest of the app's existing
+    // error-handling code works as written, instead of fixing every call
+    // site separately.
+    const inner =
+      data && typeof data === "object" && "detail" in data ? data.detail : data;
+    const message =
+      typeof inner === "string"
+        ? inner
+        : inner?.detail || inner?.non_field_errors?.[0] || "Request failed";
+    throw new ApiError(message, res.status, inner);
   }
 
   return data;

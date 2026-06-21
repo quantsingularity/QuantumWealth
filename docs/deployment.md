@@ -34,7 +34,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # Optional: AI model extras
-pip install -r ../../ai_models/requirements.txt
+pip install -r ../ai_models/requirements.txt
 ```
 
 ### 3. Configure Environment

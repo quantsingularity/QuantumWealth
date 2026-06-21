@@ -72,7 +72,7 @@ export default function GoalsPage() {
       const plan = await portfolioApi.planGoal(selectedGoal.id, {
         goal_type: selectedGoal.goal_type,
         target_amount: parseFloat(selectedGoal.target_amount),
-        current_savings: parseFloat(selectedGoal.current_savings || 0),
+        current_amount: parseFloat(selectedGoal.current_amount || 0),
         monthly_contribution: parseFloat(
           selectedGoal.monthly_contribution || 0,
         ),
@@ -136,10 +136,10 @@ export default function GoalsPage() {
                 const cfg =
                   GOAL_TYPE_CONFIG[g.goal_type] || GOAL_TYPE_CONFIG.custom;
                 const progress =
-                  g.current_savings && g.target_amount
+                  g.current_amount && g.target_amount
                     ? Math.min(
                         100,
-                        (parseFloat(g.current_savings) /
+                        (parseFloat(g.current_amount) /
                           parseFloat(g.target_amount)) *
                           100,
                       )
@@ -174,7 +174,7 @@ export default function GoalsPage() {
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
                         <span className="text-slate-500">
-                          ${parseFloat(g.current_savings || 0).toLocaleString()}{" "}
+                          ${parseFloat(g.current_amount || 0).toLocaleString()}{" "}
                           saved
                         </span>
                         <span className="font-mono text-slate-300">
@@ -259,7 +259,7 @@ export default function GoalsPage() {
                       },
                       {
                         label: "Current Savings",
-                        value: `$${parseFloat(selectedGoal.current_savings || 0).toLocaleString()}`,
+                        value: `$${parseFloat(selectedGoal.current_amount || 0).toLocaleString()}`,
                         icon: TrendingUp,
                       },
                       {
@@ -297,7 +297,7 @@ export default function GoalsPage() {
                         <span className="font-mono text-gold-400">
                           {Math.min(
                             100,
-                            (parseFloat(selectedGoal.current_savings || 0) /
+                            (parseFloat(selectedGoal.current_amount || 0) /
                               parseFloat(selectedGoal.target_amount)) *
                               100,
                           ).toFixed(1)}
@@ -308,7 +308,7 @@ export default function GoalsPage() {
                         <div
                           className="h-full bg-gradient-to-r from-gold-600 to-gold-400 rounded-full transition-all"
                           style={{
-                            width: `${Math.min(100, (parseFloat(selectedGoal.current_savings || 0) / parseFloat(selectedGoal.target_amount)) * 100)}%`,
+                            width: `${Math.min(100, (parseFloat(selectedGoal.current_amount || 0) / parseFloat(selectedGoal.target_amount)) * 100)}%`,
                           }}
                         />
                       </div>
@@ -324,9 +324,14 @@ export default function GoalsPage() {
                       {[
                         {
                           label: "Status",
-                          value: goalPlan.status?.replace("_", " ") || "—",
-                          accent:
-                            goalPlan.status === "on_track" ? "jade" : "crimson",
+                          value: goalPlan.gap_analysis
+                            ? goalPlan.gap_analysis.on_track
+                              ? "on track"
+                              : "behind pace"
+                            : "—",
+                          accent: goalPlan.gap_analysis?.on_track
+                            ? "jade"
+                            : "crimson",
                         },
                         {
                           label: "Projected Value",
@@ -337,9 +342,10 @@ export default function GoalsPage() {
                         },
                         {
                           label: "Success Probability",
-                          value: goalPlan.probability
-                            ? `${(goalPlan.probability * 100).toFixed(0)}%`
-                            : "—",
+                          value:
+                            goalPlan.probability_of_success != null
+                              ? `${(goalPlan.probability_of_success * 100).toFixed(0)}%`
+                              : "—",
                           accent: "jade",
                         },
                       ].map((m) => (
@@ -358,20 +364,22 @@ export default function GoalsPage() {
                         </div>
                       ))}
                     </div>
-                    {goalPlan.recommendation && (
+                    {goalPlan.gap_analysis && (
                       <p className="text-sm text-slate-300 bg-obsidian-900 rounded-xl p-4 border border-obsidian-700 leading-relaxed">
-                        {goalPlan.recommendation}
+                        {goalPlan.gap_analysis.on_track
+                          ? "You're on track to reach this goal at your current contribution rate."
+                          : `You're behind pace by $${Math.abs(goalPlan.gap_analysis.gap_amount || 0).toLocaleString()}. Increasing your monthly contribution would help close the gap.`}
                       </p>
                     )}
-                    {goalPlan.monthly_contribution_needed && (
+                    {goalPlan.recommended_monthly_contribution != null && (
                       <div className="mt-4 p-4 rounded-xl bg-gold-500/5 border border-gold-500/20">
                         <p className="text-xs text-slate-500 mb-1">
-                          Required Monthly Contribution
+                          Recommended Monthly Contribution
                         </p>
                         <p className="font-mono font-bold text-xl text-gold-400">
                           $
                           {parseFloat(
-                            goalPlan.monthly_contribution_needed,
+                            goalPlan.recommended_monthly_contribution,
                           ).toLocaleString()}
                           /mo
                         </p>
@@ -419,7 +427,7 @@ function CreateGoalModal({ open, onClose, onCreated }) {
       const g = await portfolioApi.createGoal({
         ...form,
         target_amount: parseFloat(form.target_amount),
-        current_savings: parseFloat(form.current_savings || 0),
+        current_amount: parseFloat(form.current_savings || 0),
         monthly_contribution: parseFloat(form.monthly_contribution || 0),
       });
       onCreated(g);

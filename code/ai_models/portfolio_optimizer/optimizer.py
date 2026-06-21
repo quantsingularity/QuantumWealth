@@ -47,7 +47,10 @@ def mean_variance_optimize(
         prob = cp.Problem(
             cp.Maximize(mu @ w - 0.5 * cp.quad_form(w, cp.psd_wrap(sigma))), constraints
         )
-    prob.solve(solver=cp.ECOS, warm_start=True)
+    # FIX: ECOS is not bundled with recent cvxpy releases and is not installed
+    # in this environment, which raised SolverError on every call. CLARABEL is
+    # cvxpy's modern default conic solver and ships with the cvxpy package.
+    prob.solve(solver=cp.CLARABEL)
     weights = (
         np.clip(w.value, 0, 1)
         if prob.status in ["optimal", "optimal_inaccurate"] and w.value is not None
@@ -96,13 +99,17 @@ def black_litterman_optimize(
 def risk_parity_optimize(tickers, sigma):
     n = len(tickers)
     w = cp.Variable(n, pos=True)
+    # FIX: cp.sqrt(cp.quad_form(...)) is not recognized as convex by cvxpy's
+    # DCP ruleset (raises DCPError), even though sqrt of a PSD quadratic form
+    # is mathematically a norm. The standard equal-risk-contribution convex
+    # reformulation (Maillard, Roncalli & Teiletche 2010) drops the square
+    # root entirely: minimizing 0.5 * w^T Sigma w - (1/n) * sum(log(w_i))
+    # yields the same equal-risk-contribution solution and is DCP-compliant.
     prob = cp.Problem(
-        cp.Minimize(
-            cp.sqrt(cp.quad_form(w, cp.psd_wrap(sigma))) - cp.sum(cp.log(w)) / n
-        ),
+        cp.Minimize(0.5 * cp.quad_form(w, cp.psd_wrap(sigma)) - cp.sum(cp.log(w)) / n),
         [cp.sum(w) == 1, w >= 0.005, w <= 0.50],
     )
-    prob.solve(solver=cp.ECOS)
+    prob.solve(solver=cp.CLARABEL)
     weights = (
         np.clip(w.value, 0, 1)
         if prob.status in ["optimal", "optimal_inaccurate"] and w.value is not None

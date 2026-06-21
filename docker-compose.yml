@@ -1,16 +1,17 @@
-version: "3.9"
+# Before running `docker compose up`, create code/backend/.env from
+# code/backend/.env.example and fill in real values. Every service below
+# loads that file via env_file, so this is the single source of truth for
+# both local (non-Docker) and Docker Compose runs.
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    env_file:
+      - ./code/backend/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    environment:
-      POSTGRES_DB: ${DB_NAME:-quantumwealth}
-      POSTGRES_USER: ${DB_USER:-qwuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-qwpassword}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
       interval: 10s
@@ -50,19 +51,17 @@ services:
       - static_files:/app/staticfiles
       - media_files:/app/media
       - ./code/ai_models:/app/ai_models:ro
+    env_file:
+      - ./code/backend/.env
     environment:
+      # These three must differ from local-dev .env values (which point at
+      # localhost) regardless of what's in the .env file, so they stay as
+      # explicit overrides - Compose always prefers an explicit environment
+      # entry over the same key loaded from env_file.
       DJANGO_SETTINGS_MODULE: quantumwealth.settings.production
-      SECRET_KEY: ${SECRET_KEY}
-      DB_NAME: ${DB_NAME:-quantumwealth}
-      DB_USER: ${DB_USER:-qwuser}
-      DB_PASSWORD: ${DB_PASSWORD:-qwpassword}
       DB_HOST: db
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-      ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY:-demo}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -82,13 +81,12 @@ services:
     command: celery -A quantumwealth worker --loglevel=info --concurrency=4
     volumes:
       - ./code/ai_models:/app/ai_models:ro
+    env_file:
+      - ./code/backend/.env
     environment:
       DJANGO_SETTINGS_MODULE: quantumwealth.settings.production
-      SECRET_KEY: ${SECRET_KEY}
       DB_HOST: db
-      DB_NAME: ${DB_NAME:-quantumwealth}
-      DB_USER: ${DB_USER:-qwuser}
-      DB_PASSWORD: ${DB_PASSWORD:-qwpassword}
+      DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
     depends_on:
       - backend
@@ -103,18 +101,26 @@ services:
     command: celery -A quantumwealth beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - ./code/ai_models:/app/ai_models:ro
+    env_file:
+      - ./code/backend/.env
     environment:
       DJANGO_SETTINGS_MODULE: quantumwealth.settings.production
-      SECRET_KEY: ${SECRET_KEY}
       DB_HOST: db
-      DB_NAME: ${DB_NAME:-quantumwealth}
-      DB_USER: ${DB_USER:-qwuser}
-      DB_PASSWORD: ${DB_PASSWORD:-qwpassword}
+      DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
     depends_on:
       - backend
       - redis
       - db
+
+  frontend-build:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_dist:/app/dist
+    command: sh -c "npm ci && npm run build"
 
   nginx:
     image: nginx:1.25-alpine
@@ -123,13 +129,19 @@ services:
       - "80:80"
     volumes:
       - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - frontend_dist:/usr/share/nginx/html:ro
       - static_files:/app/staticfiles:ro
       - media_files:/app/media:ro
     depends_on:
-      - backend
+      frontend-build:
+        condition: service_completed_successfully
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   redis_data:
   static_files:
   media_files:
+  frontend_node_modules:
+  frontend_dist:

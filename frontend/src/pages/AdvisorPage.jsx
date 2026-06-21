@@ -84,7 +84,7 @@ export default function AdvisorPage() {
   };
 
   const recList = recommendations?.recommendations || recommendations || [];
-  const driftItems = drift?.drift || drift || [];
+  const driftItems = drift?.drift_data || [];
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -133,13 +133,15 @@ export default function AdvisorPage() {
             </div>
           </div>
           <p className="text-sm text-slate-300">{suggestedAlloc.description}</p>
-          {suggestedAlloc.allocation && (
+          {suggestedAlloc.suggested_allocation && (
             <div className="flex flex-wrap gap-2 mt-3">
-              {Object.entries(suggestedAlloc.allocation).map(([k, v]) => (
-                <span key={k} className="badge-gold">
-                  {k.replace("_", " ")}: {(v * 100).toFixed(0)}%
-                </span>
-              ))}
+              {Object.entries(suggestedAlloc.suggested_allocation).map(
+                ([k, v]) => (
+                  <span key={k} className="badge-gold">
+                    {k.replace("_", " ")}: {(v * 100).toFixed(0)}%
+                  </span>
+                ),
+              )}
             </div>
           )}
         </div>
@@ -175,15 +177,15 @@ export default function AdvisorPage() {
               <div className="space-y-3">
                 {recList.map((rec, i) => {
                   const icon =
-                    rec.priority === "high"
+                    rec.severity === "high"
                       ? AlertTriangle
-                      : rec.priority === "medium"
+                      : rec.severity === "medium"
                         ? TrendingUp
                         : CheckCircle2;
                   const color =
-                    rec.priority === "high"
+                    rec.severity === "high"
                       ? "crimson"
-                      : rec.priority === "medium"
+                      : rec.severity === "medium"
                         ? "gold"
                         : "jade";
                   const Icon = icon;
@@ -201,16 +203,17 @@ export default function AdvisorPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-sm font-semibold text-slate-200">
-                              {rec.title || rec.type}
+                              {(rec.type || "").replace(/_/g, " ") ||
+                                "Recommendation"}
                             </p>
                             <span
                               className={`badge badge-${color === "crimson" ? "crimson" : color === "gold" ? "gold" : "jade"} text-[10px]`}
                             >
-                              {rec.priority || "info"}
+                              {rec.severity || "info"}
                             </span>
                           </div>
                           <p className="text-xs text-slate-400 leading-relaxed">
-                            {rec.description || rec.detail}
+                            {rec.message}
                           </p>
                           {rec.ticker && (
                             <p className="text-xs font-mono text-gold-400 mt-2">
@@ -382,14 +385,14 @@ export default function AdvisorPage() {
                                   </span>
                                 </td>
                                 <td className="text-right font-mono">
-                                  {parseFloat(
-                                    t.shares || t.quantity || 0,
-                                  ).toFixed(2)}
+                                  {parseFloat(t.suggested_shares || 0).toFixed(
+                                    2,
+                                  )}
                                 </td>
                                 <td className="text-right font-mono">
                                   $
                                   {parseFloat(
-                                    t.value || t.amount || 0,
+                                    t.estimated_value || 0,
                                   ).toLocaleString()}
                                 </td>
                                 <td className="text-xs text-slate-500">
@@ -435,8 +438,12 @@ export default function AdvisorPage() {
             {[
               {
                 label: "Goal Status",
-                value: goalPlan.status || "—",
-                accent: goalPlan.status === "on_track" ? "jade" : "crimson",
+                value: goalPlan.gap_analysis
+                  ? goalPlan.gap_analysis.on_track
+                    ? "On Track"
+                    : "Behind Pace"
+                  : "—",
+                accent: goalPlan.gap_analysis?.on_track ? "jade" : "crimson",
               },
               {
                 label: "Projected Value",
@@ -447,9 +454,10 @@ export default function AdvisorPage() {
               },
               {
                 label: "Probability of Success",
-                value: goalPlan.probability
-                  ? `${(goalPlan.probability * 100).toFixed(0)}%`
-                  : "—",
+                value:
+                  goalPlan.probability_of_success != null
+                    ? `${(goalPlan.probability_of_success * 100).toFixed(0)}%`
+                    : "—",
                 accent: "jade",
               },
             ].map((m) => (
@@ -466,9 +474,11 @@ export default function AdvisorPage() {
               </div>
             ))}
           </div>
-          {goalPlan.recommendation && (
+          {goalPlan.gap_analysis && (
             <p className="text-sm text-slate-300 bg-obsidian-900 rounded-xl p-4 border border-obsidian-700 leading-relaxed">
-              {goalPlan.recommendation}
+              {goalPlan.gap_analysis.on_track
+                ? `You're on track to reach this goal. Your current monthly contribution of $${parseFloat(goalPlan.current_monthly_contribution || 0).toLocaleString()} is projected to meet your inflation-adjusted target.`
+                : `You're behind pace by $${Math.abs(goalPlan.gap_analysis.gap_amount || 0).toLocaleString()}. Consider raising your monthly contribution to $${parseFloat(goalPlan.recommended_monthly_contribution || 0).toLocaleString()} (a gap of $${parseFloat(goalPlan.contribution_gap || 0).toLocaleString()}/month) to stay on track.`}
             </p>
           )}
         </div>

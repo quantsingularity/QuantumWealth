@@ -139,6 +139,16 @@ class TestRegimeDetector:
         assert "metrics" in result
         assert "suggested_action" in result
 
+    def test_insufficient_data_returns_error(self):
+        # Regression test: detect() previously had no guard for
+        # empty/insufficient price history, unlike predict(), and crashed
+        # with IndexError ("single positional indexer is out-of-bounds")
+        # calling .iloc[-1] on an empty rolling-window Series.
+        detector = RegimeDetector()
+        with _patch_close(_make_price_series(n=5)):  # too short
+            result = detector.detect("SHORT")
+        assert "error" in result
+
     def test_regime_is_valid_label(self):
         detector = RegimeDetector()
         with _patch_close(_make_price_series(400)):

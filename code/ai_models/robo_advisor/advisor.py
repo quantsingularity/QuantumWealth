@@ -9,7 +9,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, List
 
-
 logger = logging.getLogger("ai_engine.robo_advisor")
 
 SUGGESTED_PORTFOLIOS = {

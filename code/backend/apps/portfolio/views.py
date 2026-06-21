@@ -54,6 +54,21 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             "Portfolio created: %s by %s", portfolio.id, self.request.user.email
         )
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        # FIX: PortfolioCreateSerializer intentionally excludes id (and
+        # other read-only fields) to restrict what's settable on creation,
+        # but that means using it for the response too left the id out
+        # entirely - the frontend navigates to /portfolios/{id} right
+        # after creating one, and had nothing to navigate to.
+        output = PortfolioSerializer(
+            serializer.instance, context=self.get_serializer_context()
+        )
+        headers = self.get_success_headers(output.data)
+        return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def destroy(self, request, *args, **kwargs):
         portfolio = self.get_object()
         portfolio.is_active = False

@@ -44,7 +44,11 @@ export function AuthProvider({ children }) {
     const refresh = localStorage.getItem("qw_refresh_token");
     try {
       await auth.logout(refresh);
-    } catch {}
+    } catch {
+      // Intentionally ignored: the user should always be logged out
+      // client-side even if the server-side token blacklist call fails
+      // (e.g. the refresh token already expired).
+    }
     auth.clearTokens();
     setUser(null);
   };

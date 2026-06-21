@@ -327,9 +327,9 @@ class TaxService:
             "is_wash_sale": is_wash_sale,
             "violations": violations,
             "message": (
-                "⚠️ Wash-sale violation detected. The loss will be disallowed by the IRS."
+                "Wash-sale violation detected. The loss will be disallowed by the IRS."
                 if is_wash_sale
-                else "✅ No wash-sale violations detected for this sell date."
+                else "No wash-sale violations detected for this sell date."
             ),
             "substitutes": WASH_SALE_SUBSTITUTES.get(ticker.upper(), []),
         }

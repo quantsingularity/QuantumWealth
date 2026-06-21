@@ -28,6 +28,10 @@ import {
   EmptyState,
 } from "../components/ui";
 
+// AI prediction confidence comes back as a label ("low"/"medium"/"high"),
+// not a numeric fraction, so map it to a bar width.
+const CONFIDENCE_PCT = { low: 33, medium: 66, high: 100 };
+
 export default function MarketPage() {
   const [tab, setTab] = useState("quote");
   const [ticker, setTicker] = useState("");
@@ -46,7 +50,15 @@ export default function MarketPage() {
   useEffect(() => {
     market
       .sectors()
-      .then((d) => setSectors(d || []))
+      .then((d) => {
+        const obj = d || {};
+        setSectors(
+          Object.entries(obj).map(([name, v]) => ({
+            sector: name,
+            ytd_return: (v?.ytd_return_pct ?? 0) / 100,
+          })),
+        );
+      })
       .catch(() => {});
   }, []);
 
@@ -85,6 +97,8 @@ export default function MarketPage() {
         bars.map((b) => ({
           date: b.date?.slice(5),
           close: parseFloat(b.close || 0),
+          high: parseFloat(b.high || 0),
+          low: parseFloat(b.low || 0),
           volume: b.volume,
         })),
       );
@@ -225,7 +239,7 @@ export default function MarketPage() {
                   ).toFixed(2)}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {quoteData.exchange || quoteData.fullExchangeName} ·{" "}
+                  {quoteData.exchange && `${quoteData.exchange} · `}
                   {quoteData.currency || "USD"}
                 </p>
               </div>
@@ -310,40 +324,44 @@ export default function MarketPage() {
               {[
                 [
                   "Day High",
-                  `$${parseFloat(quoteData.dayHigh || quoteData.regularMarketDayHigh || 0).toFixed(2)}`,
+                  histData.length > 0
+                    ? `$${histData[histData.length - 1].high.toFixed(2)}`
+                    : "—",
                 ],
                 [
                   "Day Low",
-                  `$${parseFloat(quoteData.dayLow || quoteData.regularMarketDayLow || 0).toFixed(2)}`,
+                  histData.length > 0
+                    ? `$${histData[histData.length - 1].low.toFixed(2)}`
+                    : "—",
                 ],
                 [
                   "52w High",
-                  quoteData.fiftyTwoWeekHigh
-                    ? `$${parseFloat(quoteData.fiftyTwoWeekHigh).toFixed(2)}`
+                  quoteData["52w_high"]
+                    ? `$${parseFloat(quoteData["52w_high"]).toFixed(2)}`
                     : "—",
                 ],
                 [
                   "52w Low",
-                  quoteData.fiftyTwoWeekLow
-                    ? `$${parseFloat(quoteData.fiftyTwoWeekLow).toFixed(2)}`
+                  quoteData["52w_low"]
+                    ? `$${parseFloat(quoteData["52w_low"]).toFixed(2)}`
                     : "—",
                 ],
                 [
                   "Volume",
-                  quoteData.regularMarketVolume
-                    ? Number(quoteData.regularMarketVolume).toLocaleString()
+                  quoteData.volume
+                    ? Number(quoteData.volume).toLocaleString()
                     : "—",
                 ],
                 [
                   "Market Cap",
-                  quoteData.marketCap
-                    ? `$${(quoteData.marketCap / 1e9).toFixed(2)}B`
+                  quoteData.market_cap
+                    ? `$${(quoteData.market_cap / 1e9).toFixed(2)}B`
                     : "—",
                 ],
                 [
                   "P/E Ratio",
-                  quoteData.trailingPE
-                    ? parseFloat(quoteData.trailingPE).toFixed(2)
+                  quoteData.pe_ratio
+                    ? parseFloat(quoteData.pe_ratio).toFixed(2)
                     : "—",
                 ],
                 [
@@ -394,20 +412,20 @@ export default function MarketPage() {
             {[
               {
                 label: "Predicted Price",
-                value: `$${parseFloat(prediction.predicted_price || 0).toFixed(2)}`,
+                value: `$${parseFloat(prediction.expected_price || 0).toFixed(2)}`,
                 accent: "gold",
               },
               {
                 label: "Expected Return",
-                value: `${((prediction.expected_return || 0) * 100).toFixed(2)}%`,
+                value: `${(prediction.expected_return_pct || 0).toFixed(2)}%`,
                 accent:
-                  parseFloat(prediction.expected_return) >= 0
+                  (prediction.expected_return_pct || 0) >= 0
                     ? "jade"
                     : "crimson",
               },
               {
                 label: "Market Regime",
-                value: prediction.regime || "—",
+                value: prediction.regime?.regime || "—",
                 accent: "slate",
               },
             ].map((m) => (
@@ -428,15 +446,15 @@ export default function MarketPage() {
             <div className="mt-4">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-slate-500">Prediction Confidence</span>
-                <span className="font-mono text-gold-400">
-                  {(parseFloat(prediction.confidence) * 100).toFixed(0)}%
+                <span className="font-mono text-gold-400 capitalize">
+                  {prediction.confidence}
                 </span>
               </div>
               <div className="h-1.5 bg-obsidian-900 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-gold-600 to-gold-400 rounded-full transition-all"
                   style={{
-                    width: `${parseFloat(prediction.confidence) * 100}%`,
+                    width: `${CONFIDENCE_PCT[prediction.confidence] ?? 50}%`,
                   }}
                 />
               </div>

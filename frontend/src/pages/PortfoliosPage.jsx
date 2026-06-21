@@ -91,8 +91,13 @@ export default function PortfoliosPage() {
           {portfolios.map((p) => {
             const value = parseFloat(p.total_value || p.cash_balance || 0);
             const cash = parseFloat(p.cash_balance || 0);
-            const pnl = parseFloat(p.total_gain_loss || 0);
-            const pnlPct = parseFloat(p.total_gain_loss_pct || 0);
+            // FIX: the API has no total_gain_loss/total_gain_loss_pct
+            // fields, only unrealized_pnl (a dollar amount). Derive the
+            // percentage from cost basis (holdings value minus the P&L).
+            const pnl = parseFloat(p.unrealized_pnl || 0);
+            const holdingsValue = value - cash;
+            const costBasis = holdingsValue - pnl;
+            const pnlPct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
             return (
               <div
                 key={p.id}

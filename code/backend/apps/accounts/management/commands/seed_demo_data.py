@@ -161,7 +161,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"\n✅ Demo data seeded successfully!\n"
+                f"\nDemo data seeded successfully!\n"
                 f"   Login: {email} / {options['password']}\n"
                 f"   Portfolio: {portfolio.name} (${float(portfolio.total_value):,.2f})\n"
                 f"   Holdings: {portfolio.holdings.count()}\n"

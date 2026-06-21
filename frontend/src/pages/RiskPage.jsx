@@ -67,14 +67,31 @@ export default function RiskPage() {
     setLoading(true);
     setError("");
     try {
-      const [r, v, mc, corr] = await Promise.allSettled([
+      const [r, v95, v99, mc, corr] = await Promise.allSettled([
         risk.report(id),
         risk.var(id, { confidence: 0.95, method: "historical" }),
+        risk.var(id, { confidence: 0.99, method: "historical" }),
         risk.monteCarlo(id, { simulations: 1000, horizon_years: 10 }),
         risk.correlation(id),
       ]);
       setReport(r.value);
-      setVarData(v.value);
+      // FIX: /risk/var/ returns one confidence level per call (var_pct,
+      // cvar_pct, var_dollar, cvar_dollar - already percentages, no
+      // var_95/var_99 split). Merge the two calls into the shape this
+      // page renders, dividing the already-percent values by 100 so the
+      // existing *100 display math produces the right number.
+      const v95d = v95.value || {};
+      const v99d = v99.value || {};
+      setVarData({
+        var_95: v95d.var_pct != null ? v95d.var_pct / 100 : undefined,
+        var_99: v99d.var_pct != null ? v99d.var_pct / 100 : undefined,
+        cvar_95: v95d.cvar_pct != null ? v95d.cvar_pct / 100 : undefined,
+        cvar_99: v99d.cvar_pct != null ? v99d.cvar_pct / 100 : undefined,
+        var_95_dollar: v95d.var_dollar,
+        var_99_dollar: v99d.var_dollar,
+        cvar_95_dollar: v95d.cvar_dollar,
+        cvar_99_dollar: v99d.cvar_dollar,
+      });
       setMonteCarlo(mc.value);
       setCorrelation(corr.value);
     } catch (e) {
@@ -107,13 +124,7 @@ export default function RiskPage() {
   const portName =
     portfolios.find((p) => p.id == selectedId)?.name || "Portfolio";
 
-  // Monte Carlo paths for chart
-  const mcPaths = monteCarlo?.paths
-    ? monteCarlo.paths
-        .slice(0, 20)
-        .map((path, i) => path.map((v, t) => ({ t, v, key: i })))
-    : [];
-  const mcSummary = monteCarlo?.summary || monteCarlo?.percentiles || {};
+  const mcSummary = monteCarlo?.percentiles || {};
 
   // Correlation data
   const corrTickers = correlation?.tickers || [];
@@ -266,14 +277,14 @@ export default function RiskPage() {
                 <MetricRow
                   label="VaR 95% (%)"
                   value={
-                    rm.var_95_pct ? `${(rm.var_95_pct * 100).toFixed(2)}%` : "—"
+                    rm.var_95_pct != null ? `${rm.var_95_pct.toFixed(2)}%` : "—"
                   }
                 />
                 <MetricRow
                   label="CVaR 95% (%)"
                   value={
-                    rm.cvar_95_pct
-                      ? `${(rm.cvar_95_pct * 100).toFixed(2)}%`
+                    rm.cvar_95_pct != null
+                      ? `${rm.cvar_95_pct.toFixed(2)}%`
                       : "—"
                   }
                 />
@@ -282,7 +293,7 @@ export default function RiskPage() {
                     <MetricRow
                       key={k}
                       label={k.replace("_", " ")}
-                      value={`${(v * 100).toFixed(2)}%`}
+                      value={`${v.toFixed(2)}%`}
                     />
                   ))}
               </div>
@@ -380,7 +391,7 @@ export default function RiskPage() {
                       { label: "90th Percentile", value: mcSummary.p90 },
                       {
                         label: "Expected Value",
-                        value: mcSummary.mean || mcSummary.expected,
+                        value: monteCarlo?.expected_final_value,
                       },
                     ].map(
                       (m) =>
@@ -471,18 +482,19 @@ export default function RiskPage() {
                   No correlation data available. Add multiple holdings.
                 </p>
               )}
-              {correlation.high_correlation_pairs?.length > 0 && (
+              {correlation.high_correlations?.length > 0 && (
                 <div className="mt-6">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">
                     High Correlation Pairs (&gt;0.8)
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {correlation.high_correlation_pairs.map((pair) => (
+                    {correlation.high_correlations.map((pair) => (
                       <span
-                        key={`${pair[0]}-${pair[1]}`}
+                        key={`${pair.ticker_a}-${pair.ticker_b}`}
                         className="badge-crimson"
                       >
-                        {pair[0]} / {pair[1]}: {pair[2]?.toFixed(3)}
+                        {pair.ticker_a} / {pair.ticker_b}:{" "}
+                        {pair.correlation?.toFixed(3)}
                       </span>
                     ))}
                   </div>
@@ -528,27 +540,46 @@ export default function RiskPage() {
                     }
                   />
                   <div className="grid lg:grid-cols-3 gap-4">
-                    {Object.entries(stressResult.results || stressResult).map(
-                      ([k, v]) => {
-                        if (typeof v !== "number") return null;
-                        return (
-                          <div
-                            key={k}
-                            className="p-4 rounded-xl bg-obsidian-900 border border-obsidian-700"
-                          >
-                            <p className="text-xs text-slate-500 mb-2 capitalize">
-                              {k.replace(/_/g, " ")}
-                            </p>
-                            <p
-                              className={`font-mono font-bold text-2xl ${v < 0 ? "text-crimson-400" : "text-jade-500"}`}
-                            >
-                              {v >= 0 ? "+" : ""}
-                              {(v * 100).toFixed(2)}%
-                            </p>
-                          </div>
-                        );
+                    {[
+                      {
+                        label: "Total Impact (%)",
+                        value:
+                          stressResult.total_impact_pct != null
+                            ? `${stressResult.total_impact_pct >= 0 ? "+" : ""}${stressResult.total_impact_pct.toFixed(2)}%`
+                            : "—",
+                        negative: (stressResult.total_impact_pct ?? 0) < 0,
                       },
-                    )}
+                      {
+                        label: "Total Impact ($)",
+                        value:
+                          stressResult.total_impact_dollar != null
+                            ? `${stressResult.total_impact_dollar >= 0 ? "+" : "-"}$${Math.abs(stressResult.total_impact_dollar).toLocaleString()}`
+                            : "—",
+                        negative: (stressResult.total_impact_dollar ?? 0) < 0,
+                      },
+                      {
+                        label: "Stressed Portfolio Value",
+                        value:
+                          stressResult.stressed_value != null
+                            ? `$${stressResult.stressed_value.toLocaleString()}`
+                            : "—",
+                        negative: false,
+                      },
+                    ].map((m) => (
+                      <div
+                        key={m.label}
+                        className="p-4 rounded-xl bg-obsidian-900 border border-obsidian-700"
+                      >
+                        <p className="text-xs text-slate-500 mb-2 capitalize">
+                          {m.label}
+                        </p>
+                        <p
+                          className={`font-mono font-bold text-2xl ${m.negative ? "text-crimson-400" : "text-jade-500"}`}
+                        >
+                          {m.value}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

@@ -18,6 +18,14 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy application
 COPY . .
 
+# Pre-create the directories that get mounted as named volumes
+# (staticfiles, media) so Docker copies their ownership into the volume on
+# first creation. Without this, a fresh named volume mounted at a path that
+# doesn't already exist in the image defaults to root ownership, and
+# collectstatic would fail with a permission error under the non-root user
+# below on every container startup.
+RUN mkdir -p /app/staticfiles /app/media
+
 # Non-root user for security
 RUN useradd -m -u 1000 appuser \
  && chown -R appuser:appuser /app
