@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - "5432:5432"
+      - "5433:5433"
 
   redis:
     image: redis:7-alpine
@@ -60,7 +60,7 @@ services:
       # entry over the same key loaded from env_file.
       DJANGO_SETTINGS_MODULE: quantumwealth.settings.production
       DB_HOST: db
-      DB_PORT: 5432
+      DB_PORT: 5433
       REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
@@ -86,7 +86,7 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: quantumwealth.settings.production
       DB_HOST: db
-      DB_PORT: 5432
+      DB_PORT: 5433
       REDIS_URL: redis://redis:6379/0
     depends_on:
       - backend
@@ -106,7 +106,7 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: quantumwealth.settings.production
       DB_HOST: db
-      DB_PORT: 5432
+      DB_PORT: 5433
       REDIS_URL: redis://redis:6379/0
     depends_on:
       - backend

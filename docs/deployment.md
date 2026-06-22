@@ -280,7 +280,7 @@ Full list of all supported environment variables.
 | DB_USER                     | qwuser                             | No                | PostgreSQL role name                            |
 | DB_PASSWORD                 | qwpassword                         | Yes in production | PostgreSQL password                             |
 | DB_HOST                     | localhost                          | No                | PostgreSQL host                                 |
-| DB_PORT                     | 5432                               | No                | PostgreSQL port                                 |
+| DB_PORT                     | 5433                               | No                | PostgreSQL port                                 |
 | REDIS_URL                   | redis://localhost:6379/0           | No                | Redis connection URL                            |
 | ACCESS_TOKEN_MINUTES        | 60                                 | No                | JWT access token lifetime                       |
 | REFRESH_TOKEN_DAYS          | 7                                  | No                | JWT refresh token lifetime                      |

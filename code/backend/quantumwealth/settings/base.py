@@ -91,7 +91,7 @@ DATABASES = {
         "USER": config("DB_USER", default="qwuser"),
         "PASSWORD": config("DB_PASSWORD", default="qwpassword"),
         "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
+        "PORT": config("DB_PORT", default="5433"),
         "OPTIONS": {"connect_timeout": 10},
         "CONN_MAX_AGE": 60,
         "CONN_HEALTH_CHECKS": True,
